@@ -35,11 +35,11 @@ const post = new mongoose.Schema({
   },
   date_created: {
     type: Date,
-    default: today.toLocaleDateString('en-US')
+    default: Date.now
   },
   date_updated: {
     type: Date,
-    default: today.toLocaleDateString('en-US')
+    default: Date.now
   }
 })
 

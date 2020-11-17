@@ -76,11 +76,11 @@ router.post('/register', (req, res, next) => {
 })
 
 router.post('/login', (req, res) => {
-  //console.log(req);
+  console.log(req.body)
   const uid = req.body.uid
   const password = req.body.password
   User.findOne({ uid: uid }).then((user) => {
-    if (!user) res.json({ msg: 'Invalid credentials' }).status(400)
+    if (!user) res.status(400).json({ error: 'Invalid credentials' })
     bcrypt.compare(password, user.password).then((isMatch) => {
       console.log('password is matching', isMatch)
       if (isMatch) {
@@ -91,7 +91,7 @@ router.post('/login', (req, res) => {
           type: user.role,
           username: user.username
         }
-        jwt.sign(payload, secret, { expiresIn: 3600 }, (error, token) => {
+        jwt.sign(payload, secret, { expiresIn: 36000 }, (error, token) => {
           if (error) res.json({ error }).status(401)
           res.json({ success: true, token: `Bearer ${token}` })
         })

@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 const express = require('express')
 const router = express.Router()
 const passport = require('passport')
-const { findOneAndDelete } = require('../models/Post')
+const { findOneAndDelete, populate } = require('../models/Post')
 const ObjectId = mongoose.Types.ObjectId
 const comment = require('../models/Comment')
 
@@ -36,6 +36,8 @@ router.get(
     console.log(req.user)
     post
       .find({ postedBy: ObjectId(req.user.id) })
+      .sort({ date_created: -1 })
+      .populate({ path: 'likes', model: 'User', select: 'name' })
       .populate('postedBy', 'name role profile.branch uid')
       .then((mypost) => {
         res.json({ mypost })
@@ -48,7 +50,7 @@ router.get(
 
 // Add comment
 router.put(
-  '/comment',
+  '/add-comment',
   passport.authenticate('jwt', { session: false }),
   (req, res) => {
     const newComment = new comment({
@@ -62,7 +64,7 @@ router.put(
         console.log(result)
         post
           .findByIdAndUpdate(
-            req.body.postId,
+            req.body.id,
             {
               $push: { comments: newComment }
             },
@@ -70,12 +72,14 @@ router.put(
               new: true
             }
           )
-          .exec((err, result) => {
+          .populate('comments')
+          .then((result) => {
+            res.json(result)
+          })
+          .catch((error) => {
             if (err) {
               console.log(err)
               return res.status(422).json({ error: err })
-            } else {
-              res.json(result)
             }
           })
       })
@@ -86,102 +90,107 @@ router.put(
   }
 )
 
+router.get(
+  '/get-comments?',
+  passport.authenticate('jwt', { session: false }),
+  (req, res) => {
+    // console.log('request->params', req.query)
+    post
+      .findById(req.query.id)
+      .populate({
+        path: 'comments',
+        model: 'Comment',
+        populate: {
+          path: 'postedBy',
+          model: 'User',
+          select: 'name profile'
+        }
+      })
+      .then((result) => {
+        if (res) console.log(result)
+        res.status(200).json(result.comments)
+      })
+      .catch((err) => {
+        console.log(err)
+        res.status(422).json({ error: err })
+      })
+  }
+)
+
 //like a post
 router.put(
-  '/like/student',
+  '/like',
   passport.authenticate('jwt', { session: false }),
   (req, res) => {
+    console.log(req.body)
     post
-      .findByIdAndUpdate(
-        req.body.postId,
-        {
-          $push: { likedByStudent: req.user.id }
-        },
-        {
-          new: true
-        }
-      )
-      .exec((err, result) => {
-        if (err) {
-          return res.status(422).json({ error: err })
+      .findById(req.body.id)
+      .populate({ path: 'likes', model: 'User', select: 'name' })
+      .then((response) => {
+        if (response) {
+          const data = response.likes.filter(
+            (item) => item['_id'] == req.user.id
+          )
+          if (data.length > 0) {
+            return res
+              .status(401)
+              .json({ error: 'Bad request, post already liked by user' })
+          }
+          post
+            .findByIdAndUpdate(
+              req.body.id,
+              {
+                $push: { likes: req.user.id }
+              },
+              {
+                new: true
+              }
+            )
+            .then((result) => {
+              res.status(200).json(result)
+            })
+            .catch((error) => res.status(422).status(error))
         } else {
-          res.status(200).json(result)
+          return res.status(404).json({ error: 'Post not found' })
         }
       })
+      .catch((error) => console.log(error))
   }
 )
 
-//unlike a post
 router.put(
-  '/unlike/student',
+  '/unlike',
   passport.authenticate('jwt', { session: false }),
   (req, res) => {
     post
-      .findByIdAndUpdate(
-        req.body.postId,
-        {
-          $pull: { likedByStudent: req.user.id }
-        },
-        {
-          new: true
-        }
-      )
-      .exec((err, result) => {
-        if (err) {
-          return res.status(422).json({ error: err })
+      .findById(req.body.id)
+      .populate({ path: 'likes', model: 'User', select: 'name' })
+      .then((response) => {
+        if (response) {
+          const data = response.likes.filter(
+            (item) => item['_id'] == req.user.id
+          )
+          if (data.length === 0) {
+            return res
+              .status(401)
+              .json({ error: 'Bad request, post is not liked by user' })
+          }
+          post
+            .findByIdAndUpdate(
+              req.body.id,
+              {
+                $pull: { likes: req.user.id }
+              },
+              {
+                new: true
+              }
+            )
+            .then((result) => {
+              res.status(200).json(result)
+            })
+            .catch((error) => res.status(422).status(error))
         } else {
-          res.status(200).json(result)
-        }
-      })
-  }
-)
-
-//like by teacher
-//like a post
-router.put(
-  '/like/teacher',
-  passport.authenticate('jwt', { session: false }),
-  (req, res) => {
-    post
-      .findByIdAndUpdate(
-        req.body.postId,
-        {
-          $push: { likedByTeacher: req.user.id }
-        },
-        {
-          new: true
-        }
-      )
-      .exec((err, result) => {
-        if (err) {
-          return res.status(422).json({ error: err })
-        } else {
-          res.status(200).json(result)
-        }
-      })
-  }
-)
-
-//unlike a post
-router.put(
-  '/unlike/teacher',
-  passport.authenticate('jwt', { session: false }),
-  (req, res) => {
-    post
-      .findByIdAndUpdate(
-        req.body.postId,
-        {
-          $pull: { likedByTeacher: req.user.id }
-        },
-        {
-          new: true
-        }
-      )
-      .exec((err, result) => {
-        if (err) {
-          return res.status(422).json({ error: err })
-        } else {
-          res.status(200).json(result)
+          return res.status(404).json({ error: 'Post not found' })
         }
       })
   }
