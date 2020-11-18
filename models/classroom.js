@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 const today = require('./date.js')
-const classroomschema = new mongoose.Schema({
+const classroom = new mongoose.Schema({
   students: {
     type: [mongoose.Types.ObjectId],
     ref: 'User'
@@ -31,19 +31,22 @@ const classroomschema = new mongoose.Schema({
     dueDate: Date,
     date_created: Date.now
   },
-  subjectName: {
+  name: {
     type: String,
     required: true
   },
-  datecreated: {
+  code: {
+    type: String
+  },
+  date_created: {
     type: Date,
     default: today.toLocaleDateString('en-US')
   },
-  dateupdated: {
+  date_updated: {
     type: Date,
     default: today.toLocaleDateString('en-US')
   }
 })
-const Classroom = mongoose.model('Classroom', classroomschema)
+const Classroom = mongoose.model('Classroom', classroom)
 
 module.exports = Classroom

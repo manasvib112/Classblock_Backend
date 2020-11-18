@@ -117,6 +117,33 @@ router.get(
   }
 )
 
+router.get(
+  '/get-likes?',
+  passport.authenticate('jwt', { session: false }),
+  (req, res) => {
+    console.log(req.query)
+    post
+      .findById(req.query.id)
+      .populate({
+        path: 'likes',
+        model: 'User',
+        select: 'name'
+      })
+      .then((result) => {
+        if (res) console.log(result)
+        res.status(200).json({
+          succes: true,
+          count: result.likes.length,
+          likes: result.likes
+        })
+      })
+      .catch((err) => {
+        console.log(err)
+        res.status(422).json({ error: err })
+      })
+  }
+)
+
 //like a post
 router.put(
   '/like',

@@ -92,10 +92,10 @@ router.post('/login', (req, res) => {
           username: user.username
         }
         jwt.sign(payload, secret, { expiresIn: 36000 }, (error, token) => {
-          if (error) res.json({ error }).status(401)
+          if (error) res.status(401).json({ error })
           res.json({ success: true, token: `Bearer ${token}` })
         })
-      } else res.json({ msg: 'Password does not match' }).status(400)
+      } else res.status(400).json({ msg: 'Password does not match' })
     })
   })
 })
