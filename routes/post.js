@@ -13,7 +13,8 @@ router.post(
   (req, res) => {
     const newpost = new post({
       postedBy: req.user.id,
-      content: req.body.content
+      content: req.body.content,
+      media: req.body.media
     })
     newpost
       .save()

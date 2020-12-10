@@ -6,6 +6,7 @@ const post = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  media: { type: String, default: '' },
   likes: {
     type: [mongoose.Schema.Types.ObjectId],
     ref: 'User'
