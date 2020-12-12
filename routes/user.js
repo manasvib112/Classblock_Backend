@@ -7,6 +7,7 @@ const User = require('../models/User')
 const router = express.Router()
 const passport = require('passport')
 const mongoose = require('mongoose')
+const { response } = require('express')
 
 //Routes
 /**
@@ -80,6 +81,7 @@ router.post('/login', (req, res) => {
   const uid = req.body.uid
   const password = req.body.password
   User.findOne({ uid: uid }).then((user) => {
+    console.log('user found')
     if (!user) res.status(400).json({ error: 'Invalid credentials' })
     bcrypt.compare(password, user.password).then((isMatch) => {
       console.log('password is matching', isMatch)
@@ -99,6 +101,24 @@ router.post('/login', (req, res) => {
     })
   })
 })
+
+router.put(
+  '/profile-image',
+  passport.authenticate('jwt', { session: false }),
+  (req, res) => {
+    User.findByIdAndUpdate(req.user.id, { image: req.body.image })
+      .then((response) => {
+        if (response) {
+          res
+            .status(200)
+            .json({ success: true, message: 'Profile image updated' })
+        } else {
+          res.status(400).json({ error: 'Could not update image' })
+        }
+      })
+      .catch((error) => res.status(404).json(error))
+  }
+)
 
 //student follow student
 router.put(
@@ -187,6 +207,23 @@ router.get(
   }
 )
 
+router.get(
+  '/user-profile',
+  passport.authenticate('jwt', { session: false }),
+  (req, res) => {
+    User.findById(req.user.id)
+      .then((response) => {
+        if (response) {
+          res.status(200).json({ success: true, payload: response })
+        } else {
+          res
+            .status(404)
+            .json({ success: false, error: 'Could not find the user' })
+        }
+      })
+      .catch((error) => res.status(400).json(error))
+  }
+)
 //TODO
 // update username
 // make CR

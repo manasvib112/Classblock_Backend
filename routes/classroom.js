@@ -80,7 +80,9 @@ router.post(
     const newPost = new Post({
       postedBy: req.user.id,
       content: req.body.content,
-      class: req.body.class
+      class: req.body.class,
+      isQuery: req.body.isQuery,
+      media: req.body.media
     })
     newPost
       .save()
@@ -92,6 +94,7 @@ router.post(
           })
             .populate({ path: 'posts', model: 'Post', select: 'content' })
             .then((classEntry) => {
+              console.log(classEntry)
               if (classEntry) {
                 return res.status(200).json({
                   success: true,
@@ -132,6 +135,29 @@ router.get(
       })
   }
 )
+router.get(
+  '/class/:id',
+  passport.authenticate('jwt', { session: false }),
+  (req, res) => {
+    //TODO
+    // Restrict users outside the class from viewing the contents
+    Class.findById(req.params.id)
+      .populate({
+        path: 'posts',
+        model: 'Post',
+        populate: { path: 'postedBy', model: 'User' }
+      })
+      .then((result) => {
+        if (result) {
+          res.json({ success: true, result })
+        }
+        res.status(404).json({ success: false, error: 'Classroom not found' })
+      })
+      .catch((error) => {
+        res.status(400).json(error)
+      })
+  }
+)
 
 router.get(
   '/get-user-classrooms/:id',
@@ -139,6 +165,7 @@ router.get(
   (req, res) => {
     console.log(req.params)
     Class.find({ students: req.params.id })
+      .populate({ path: 'students', model: 'User', select: 'name' })
       .then((result) => {
         if (result.length > 0) {
           return res.json({ success: true, classes: result })

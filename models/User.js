@@ -54,6 +54,7 @@ const user = new mongoose.Schema({
     certification: [String],
     education: [String]
   },
+  image: { type: String, default: '' },
   teams: {
     type: [mongoose.Types.ObjectId],
     ref: 'Team'
